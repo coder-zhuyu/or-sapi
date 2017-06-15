@@ -34,7 +34,7 @@ function _M.gen_orderno()
 
     num = tonumber(num)
     if num < 60000 or num >= 90000 then
-        local ok, err = auto_incr:set('ccbrecharge.sequence', 60001)
+        local ok, err = auto_incr:set('sapi.sequence', 60001)
         if not ok then
             return nil, err
         end
