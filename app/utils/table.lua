@@ -1,4 +1,8 @@
 local slaxml = require "resty.slaxdom"
+local tab_insert = table.insert
+local tab_concat = table.concat
+local tab_sort = table.sort
+local str_format = string.format
 
 local _M = {}
 
@@ -11,34 +15,43 @@ function _M.is_empty(t)
     end
 end
 
+function _M.is_array(t)
+    if type(t) ~= "table" then return false end
+    local i = 0
+    for _ in pairs(t) do
+        i = i + 1
+        if t[i] == nil then return false end
+    end
+    return true
+end
 
 -- table转字符串
 function _M.table2str(tab)
     local res_tab = {}
 
     for key, val in pairs(tab) do
-        table.insert(res_tab, string.format('%s=%s', key, val))
+        tab_insert(res_tab, str_format('%s=%s', key, val))
     end
 
-    return table.concat(res_tab, "&")
+    return tab_concat(res_tab, "&")
 end
 
 -- table取部分转成字符串
 function _M.table2str_by_keys(tab, keys)
     local res_tab = {}
     for _, key in pairs(keys) do
-        table.insert(res_tab, string.format('%s=%s', key, tab[key] or ''))
+        tab_insert(res_tab, str_format('%s=%s', key, tab[key] or ''))
     end
-    return table.concat(res_tab, '&')
+    return tab_concat(res_tab, '&')
 end
 
 -- table中value值urlencode
 function _M.table2str_urlencode(tab)
     local res_tab = {}
     for k, v in pairs(tab) do
-        table.insert(res_tab, string.format('%s=%s', k, ngx.escape_uri(v)))
+        tab_insert(res_tab, str_format('%s=%s', k, ngx.escape_uri(v)))
     end
-    return table.concat(res_tab, "&")
+    return tab_concat(res_tab, "&")
 end
 
 -- table转字符串, 按key升序排
@@ -49,34 +62,34 @@ function _M.table2str_order(tab)
     -- 取出所有的键
     for key, _ in pairs(tab) do
         if key ~= 'sign' then
-            table.insert(key_tab, key)
+            tab_insert(key_tab, key)
         end
     end
     -- 对所有键进行排序
-    table.sort(key_tab)
+    tab_sort(key_tab)
     for _, key in pairs(key_tab) do
         -- 为空值不参与签名
         if tab[key] and tab[key] ~= "" then
-            table.insert(res_tab, string.format('%s=%s', key, tab[key]))
+            tab_insert(res_tab, str_format('%s=%s', key, tab[key]))
         end
     end
 
-    return table.concat(res_tab, "&")
+    return tab_concat(res_tab, "&")
 end
 
 
 -- table转xml格式
 function _M.table2xml(tab)
     local res_tab = {}
-    table.insert(res_tab, "<xml>")
+    tab_insert(res_tab, "<xml>")
 
     for key, val in pairs(tab) do
-        table.insert(res_tab, string.format('<%s>%s</%s>', key, val, key))
+        tab_insert(res_tab, str_format('<%s>%s</%s>', key, val, key))
     end
 
-    table.insert(res_tab, "</xml>")
+    tab_insert(res_tab, "</xml>")
 
-    return table.concat(res_tab, "")
+    return tab_concat(res_tab, "")
 end
 
 -- xml转table

@@ -1,6 +1,8 @@
 local mysql = require "resty.mysql"
 local config = require "config"
 local log = require "utils.log"
+local cjson = require "cjson"
+local u_string = require "utils.string"
 
 local _M = {}
 
@@ -72,12 +74,25 @@ function _M.transaction_rollback(self)
         return nil
     end
 
+    -- 连接池
+    local pool = config.get('mysql_pool')
+    local ok, err = db:set_keepalive(pool.timeout, pool.size)
+    if not ok then
+        log.err("failed to set keepalive: " .. err)
+    end
+
     return true
 end
 
 
 -- 执行sql
-function _M.execute(self, sql)
+function _M.execute(self, sql, params)
+    local sql = u_string.parse_sql(sql, params)
+    if not sql then
+        log.err("sql format error: ", sql, ": ", cjson.encode(params))
+        return nil
+    end
+
     local db = self.db
 
     local res, err, errno, sqlstate = db:query(sql)
@@ -87,6 +102,38 @@ function _M.execute(self, sql)
     end
 
     return res
+end
+
+
+function _M.select(self, sql, params)
+    return self:execute(sql, params)
+end
+
+function _M.insert(self, sql, params)
+    local res, errno = self:execute(sql, params)
+    if res and res.affected_rows > 0 then
+        return true
+    else
+        return false, errno
+    end
+end
+
+function _M.update(self, sql, params)
+    local res, errno = self:execute(sql, params)
+    if res and res.affected_rows > 0 then
+        return true
+    else
+        return false, errno
+    end
+end
+
+function _M.delete(self, sql, params)
+    local res, errno = self:execute(sql, params)
+    if res and res.affected_rows > 0 then
+        return true
+    else
+        return false, errno
+    end
 end
 
 return _M

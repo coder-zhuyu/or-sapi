@@ -1,27 +1,34 @@
 local gsub = ngx.re.gsub
 local ngx_re = require "ngx.re"
+local tab_insert = table.insert
+local tab_concat = table.concat
+local str_format = string.format
+local str_sub = string.sub
+local str_gsub = string.gsub
+local u_table = require "utils.table"
+local ngx_quote_sql_str = ngx.quote_sql_str
 
 local _M = {}
 
 function _M.time_format(time_stamp)
     local res_tab = {}
-    table.insert(res_tab, string.sub(time_stamp, 1, 4))
-    table.insert(res_tab, "-")
-    table.insert(res_tab, string.sub(time_stamp, 5, 6))
-    table.insert(res_tab, "-")
-    table.insert(res_tab, string.sub(time_stamp, 7, 8))
-    table.insert(res_tab, " ")
-    table.insert(res_tab, string.sub(time_stamp, 9, 10))
-    table.insert(res_tab, ":")
-    table.insert(res_tab, string.sub(time_stamp, 11, 12))
-    table.insert(res_tab, ":")
-    table.insert(res_tab, string.sub(time_stamp, 13, 14))
-    return table.concat(res_tab, "")
+    tab_insert(res_tab, str_sub(time_stamp, 1, 4))
+    tab_insert(res_tab, "-")
+    tab_insert(res_tab, str_sub(time_stamp, 5, 6))
+    tab_insert(res_tab, "-")
+    tab_insert(res_tab, str_sub(time_stamp, 7, 8))
+    tab_insert(res_tab, " ")
+    tab_insert(res_tab, str_sub(time_stamp, 9, 10))
+    tab_insert(res_tab, ":")
+    tab_insert(res_tab, str_sub(time_stamp, 11, 12))
+    tab_insert(res_tab, ":")
+    tab_insert(res_tab, str_sub(time_stamp, 13, 14))
+    return tab_concat(res_tab, "")
 end
 
 -- 字符串去掉左右空格
 function _M.trim (s)
-    return string.gsub(s, "^%s*(.-)%s*$", "%1")
+    return str_gsub(s, "^%s*(.-)%s*$", "%1")
 end
 
 -- 手机号码格式校验
@@ -52,9 +59,31 @@ end
 function _M.list2str(tab, key)
     local id_list = {}
     for _, tab_info in ipairs(tab) do
-        table.insert(id_list, tab_info[key])
+        tab_insert(id_list, tab_info[key])
     end
-    return "('" .. table.concat(id_list, "','") .. "')"
+    return "('" .. tab_concat(id_list, "','") .. "')"
+end
+
+
+-- sql 格式化
+function _M.parse_sql(sql, params)
+    if not params or not u_table.is_array(params) or #params == 0 then
+        return sql
+    end
+
+    if not sql then return nil end
+
+    local new_params = {}
+    for _, v in ipairs(params) do
+        if type(v) == 'string' then
+            tab_insert(new_params, ngx_quote_sql_str(v))
+        else
+            tab_insert(new_params, v)
+        end
+    end
+
+    sql = str_format(sql, unpack(new_params))
+    return sql
 end
 
 return _M

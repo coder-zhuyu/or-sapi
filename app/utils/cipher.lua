@@ -4,6 +4,9 @@ local resty_str = require "resty.string"
 local resty_rsa = require "resty.rsa"
 local base64_decode = ngx.decode_base64
 local base64_encode = ngx.encode_base64
+local tab_insert = table.insert
+local tab_concat = table.concat
+local str_sub = string.sub
 
 local _M = {}
 
@@ -41,36 +44,36 @@ end
 -- RSA密钥格式转换 64个字符换行 并且前后加上两行 支持pkcs8格式
 function _M.trans_rsa_private_key(private_key)
     local res = {}
-    table.insert(res, '-----BEGIN PRIVATE KEY-----')
+    tab_insert(res, '-----BEGIN PRIVATE KEY-----')
     local str_64= ''
     while true
     do
-        str_64 = string.sub(private_key, 1, 64)
-        table.insert(res, str_64)
+        str_64 = str_sub(private_key, 1, 64)
+        tab_insert(res, str_64)
         if #private_key - #str_64 == 0 then
             break
         end
-        private_key = string.sub(private_key, 65)
+        private_key = str_sub(private_key, 65)
     end
-    table.insert(res, '-----END PRIVATE KEY-----')
-    return table.concat(res, '\n')
+    tab_insert(res, '-----END PRIVATE KEY-----')
+    return tab_concat(res, '\n')
 end
 
 function _M.trans_rsa_pub_key(pub_key)
     local res = {}
-    table.insert(res, '-----BEGIN PUBLIC KEY-----')
+    tab_insert(res, '-----BEGIN PUBLIC KEY-----')
     local str_64= ''
     while true
     do
-        str_64 = string.sub(pub_key, 1, 64)
-        table.insert(res, str_64)
+        str_64 = str_sub(pub_key, 1, 64)
+        tab_insert(res, str_64)
         if #pub_key - #str_64 == 0 then
             break
         end
-        pub_key = string.sub(pub_key, 65)
+        pub_key = str_sub(pub_key, 65)
     end
-    table.insert(res, '-----END PUBLIC KEY-----')
-    return table.concat(res, '\n')
+    tab_insert(res, '-----END PUBLIC KEY-----')
+    return tab_concat(res, '\n')
 end
 
 -- RSA签名

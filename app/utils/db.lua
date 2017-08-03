@@ -1,11 +1,13 @@
 local mysql = require "resty.mysql"
 local config = require "config"
 local log = require "utils.log"
+local cjson = require "cjson"
+local u_string = require "utils.string"
 
 local _M = {}
 
 -- 抽象数据库操作
-function _M.execute(sql)
+local function execute(sql)
     local db, err = mysql:new()
     if not db then
         log.err("failed to instantiate mysql: ", err)
@@ -19,14 +21,14 @@ function _M.execute(sql)
     local ok, err, errno, sqlstate = db:connect(config.get('mysql_conn'))
     if not ok then
         log.err("failed to connect: ", err, ": ", errno, ": ", sqlstate)
-        return nil
+        return nil, errno
     end
 
     -- execute sql
     local res, err, errno, sqlstate = db:query(sql)
     if not res then
         log.err("query failed: ", err, ": ", errno, ": ", sqlstate)
-        return nil
+        return nil, errno
     end
 
     -- 连接池
@@ -38,6 +40,47 @@ function _M.execute(sql)
     end
 
     return res
+end
+
+local function query(sql, params)
+    local sql = u_string.parse_sql(sql, params)
+    if not sql then
+        log.err("sql format error: ", sql, ": ", cjson.encode(params))
+        return nil
+    end
+
+    return execute(sql)
+end
+
+function _M.select(sql, params)
+    return query(sql, params)
+end
+
+function _M.insert(sql, params)
+    local res, errno = query(sql, params)
+    if res and res.affected_rows > 0 then
+        return true
+    else
+        return false, errno
+    end
+end
+
+function _M.update(sql, params)
+    local res, errno = query(sql, params)
+    if res and res.affected_rows > 0 then
+        return true
+    else
+        return false, errno
+    end
+end
+
+function _M.delete(sql, params)
+    local res, errno = query(sql, params)
+    if res and res.affected_rows > 0 then
+        return true
+    else
+        return false, errno
+    end
 end
 
 return _M
